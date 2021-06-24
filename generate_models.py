@@ -6,14 +6,11 @@ import utils
 import markov
 
 
-def create(file_name, file_in_sep, random_seed):
+def create(file_name, file_in_sep):
     """Generate tps from sequences in file_in"""
 
-    # set random
-    random.seed(random_seed)
-
     # Create target dir if don't exist
-    dir_out = "data/models/" + file_name + "_" + str(random_seed) + "/"
+    dir_out = "data/models/" + file_name + "/"
 
     if not os.path.exists(dir_out):
         os.mkdir(dir_out)
@@ -34,4 +31,4 @@ def create(file_name, file_in_sep, random_seed):
 
 
 if __name__ == "__main__":
-    create("bicinia", " ", 8)
+    create("input2", "")
