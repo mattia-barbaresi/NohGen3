@@ -121,7 +121,7 @@ def run_ga(file_in, random_seed, novelty_method):
         offspring = list(map(toolbox.clone, toolbox.select(pop, k=constants.POP_SIZE - constants.N_ELITE)))
         elite = list(map(toolbox.clone, offspring[:constants.N_ELITE]))  # Select the elite
 
-        # random.shuffle(offspring)
+        random.shuffle(offspring)
 
         # CROSSOVER
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
