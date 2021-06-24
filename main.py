@@ -17,7 +17,7 @@ def run_ga(file_in, random_seed, novelty_method):
     numpy.random.seed(random_seed)
 
     root_out = "data/out/" + file_in + "/"
-    dir_out = root_out + novelty_method + "_" + datetime.now().strftime("%Y%m%d-%H.%M.%S") + "/"
+    dir_out = root_out + novelty_method + "_" + str(random_seed) + "_" + datetime.now().strftime("%Y%m%d-%H.%M.%S") + "/"
 
     # Create target dir if don't exist
     if not os.path.exists(root_out):
@@ -65,18 +65,18 @@ def run_ga(file_in, random_seed, novelty_method):
     toolbox = base.Toolbox()
     # init DEAP fitness and individual for tournament in novelty search
     if not hasattr(creator, "FitnessMaxTN"):
-        creator.create("FitnessMaxTN", base.Fitness, weights=(1.0,))
+        creator.create("FitnessMaxTN", base.Fitness, weights=(-1.0,))
         creator.create("IndividualTN", list, fitness=creator.FitnessMaxTN)
     # init DEAP fitness and individual
     if not hasattr(creator, "FitnessMax"):
-        creator.create("FitnessMax", base.Fitness, weights=(1.0, 1.0))
+        creator.create("FitnessMax", base.Fitness, weights=(-1.0, 1.0))
         creator.create("Individual", list, fitness=creator.FitnessMax)
     toolbox.register("dirInd", lambda: deap_ops.create_individual(alphabet))
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.dirInd)
     # GA operators
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.35)
+    toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.5)
     # selection
     toolbox.register("select", tools.selSPEA2)
     # eval
@@ -84,7 +84,7 @@ def run_ga(file_in, random_seed, novelty_method):
     toolbox.register("evaluateMulti", lambda x: deap_ops.eval_fitness_and_novelty(x, tps, pop, archive))
 
     # evaluation function: (fitness or fitness-novelty)
-    evaluation_function = toolbox.evaluateMulti
+    evaluation_function = toolbox.evaluate
     feasible_individuals = 0
     # create the population
     pop = toolbox.population(n=constants.POP_SIZE)
@@ -121,33 +121,20 @@ def run_ga(file_in, random_seed, novelty_method):
         offspring = list(map(toolbox.clone, toolbox.select(pop, k=constants.POP_SIZE - constants.N_ELITE)))
         elite = list(map(toolbox.clone, offspring[:constants.N_ELITE]))  # Select the elite
 
-        random.shuffle(offspring)
+        # random.shuffle(offspring)
 
         # CROSSOVER
-        def _cross_over(ind1,ind2):
+        for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < constants.CXPB:
-                toolbox.mate(ind1, ind2)
-                del ind1.fitness.values
-                del ind2.fitness.values
-        toolbox.map(_cross_over, zip(offspring[::2], offspring[1::2]))
-
-        # for child1, child2 in zip(offspring[::2], offspring[1::2]):
-        #     if random.random() < constants.CXPB:
-        #         toolbox.mate(child1, child2)
-        #         del child1.fitness.values
-        #         del child2.fitness.values
+                toolbox.mate(child1, child2)
+                del child1.fitness.values
+                del child2.fitness.values
 
         # MUTATION
-        def _mutation(mutant):
+        for mutant in offspring:
             if random.random() < constants.MUTPB:
                 toolbox.mutate(mutant)
                 del mutant.fitness.values
-        toolbox.map(_mutation, offspring)
-
-        # for mutant in offspring:
-        #     if random.random() < constants.MUTPB:
-        #         toolbox.mutate(mutant)
-        #         del mutant.fitness.values
 
         # Evaluate the individuals with an invalid fitness
         # t2 = datetime.now()
@@ -204,7 +191,6 @@ def run_ga(file_in, random_seed, novelty_method):
         best_plot["fits"].append(bb.fitness.values[0])
         best_plot["novs"].append(bb.fitness.values[1])
 
-
     print("time elapsed :", stats["time"], "sec.")
 
     # save stats
@@ -217,4 +203,4 @@ def run_ga(file_in, random_seed, novelty_method):
 
 
 if __name__ == "__main__":
-    run_ga("bicinia_8", 8, "multi_log_genotype")
+    run_ga("input", 8, "fitness_only")
